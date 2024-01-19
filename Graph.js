@@ -4,7 +4,7 @@ class Graph {
     _data = [];
     _size = 0;
     _isDirected = false;
-    constructor(size, data, isDirected) {
+    constructor(size, data = [], isDirected = false) {
         this._size = size;
         this._isDirected = isDirected;
         this._data = new Array(this._size).fill(null).map(() => new Array(this._size).fill(0));
@@ -41,8 +41,8 @@ class Graph {
     }
 
     // Prints graph
-    print = () => {
-        console.log('\n');
+    print = (message = '') => {
+        console.log(message + '\n');
         for (let i = 0; i < this._size; i++) {
             console.log(i, '|\t', this._data[i].join('\t'));
         }
@@ -76,7 +76,6 @@ class Graph {
 
     // Find shortest path between vertices
     shortestPath = (start, end) => {
-        console.log(start, end, this._size);
         if (start < 0 || start >= this._size || end < 0 || end >= this._size) {
             console.log('No path found.');
             return [];
@@ -188,6 +187,50 @@ class Graph {
 
         return isCyclic;
     }
+
+    // Minimum spanning tree
+    mst = () => {
+        const edges = [];
+        this._data.forEach((neighbors, startIndex) => {
+            neighbors.forEach((value, endIndex) => {
+                if (value && !edges.find(
+                    ed => (ed.start === startIndex && ed.end === endIndex)
+                        || (ed.start === endIndex && ed.end === startIndex))) {
+                    edges.push({ start: startIndex, end: endIndex, value })
+                }
+            });
+        });
+
+        edges.sort((a, b) => a.value - b.value);
+
+        const mst = new Graph(this._size);
+        const root = new Array(this._size).fill(-1);
+
+        const findRoot = (vertex) => {
+            if (root[vertex] === -1) {
+                return vertex;
+            }
+            return findRoot(root[vertex]);
+        };
+
+        edges.forEach(({ start, end, value }) => {
+            const rootStart = findRoot(start);
+            const rootEnd = findRoot(end);
+
+            if (rootStart !== rootEnd) {
+                mst.addEdge(start, end, value);
+                root[rootEnd] = rootStart;
+            }
+        });
+        return mst;
+    }
+
+    // Clone this graph
+    clone = () => {
+        const clone = new Graph(this._size);
+        clone._data = clone._data.map((l, i) => [...this._data[i]]);
+        return clone;
+    }
 }
 
 process.stdin.resume();
@@ -218,19 +261,23 @@ function main() {
         pair = line && line.replace(/\s+$/g, '').split(' ').map(gbTemp => parseInt(gbTemp, 10));
         pair && gb.push(pair);
     } while (pair?.length);
+
     const graph = new Graph(n, gb, false);
-    graph.print();
+    graph.print('Initioal');
     graph.addVertex([{ index: 7, value: 2 }, { index: 8, value: 9 }]);
     graph.addEdge(3, 9, 11);
-    graph.print();
+    graph.print('After adding egde 1->9 = 11');
     graph.removeVertex(9);
-    graph.print();
+    graph.print('After removing vertex 9');
     graph.shortestPath(0, 8);
     console.log('Is Graph Cyclic ? :', graph.isCyclic());
+    const mstGraph = graph.mst();
+    mstGraph.print('MST Graph');
+    graph.shortestPath(0, 0);
     graph.dfsPrint();
     graph.removeVertex(8);
     graph.removeVertex(1);
-    graph.print();
+    graph.print('Final');
     graph.bfs(3);
 }
 
